@@ -8,13 +8,12 @@ const EmojiPicker = dynamic(
 import { Theme } from "emoji-picker-react";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Icon, Flex, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, Text } from "@chakra-ui/react";
-import { createSwapy, utils } from "swapy";
+import { Icon, Flex, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, Text } from "@chakra-ui/react";
+import { createSwapy } from "swapy";
 import { MdEdit } from "react-icons/md";
 import dynamic from "next/dynamic";
 
-import EmojiSwapy from "./EmojiSwapy";
-import { useDarkMode } from "@/hooks";
+import { useDarkMode, useToast } from "@/hooks";
 import { brandColors, themeColors } from "@/settings/theme";
 import EmojiCard from "./EmojiCard";
 import { fontSizes } from "@/settings/constants/paddings";
@@ -28,50 +27,63 @@ type Props = {
 
 const SuccessModal = ({ isOpen, onClose, movieName, emojiArray }: Props) => {
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
-  const [updatedEmojiArray, setUpdatedEmojiArray] = useState<string[]>([]);
   const [emojiToReplace, setEmojiToReplace] = useState<string>("");
+  const [replacements, setReplacements] = useState<{ [emoji: string]: string }[]>([]);
 
-  const container = useRef(null);
+  const container = useRef<HTMLDivElement>(null);
   const swapy = useRef<any>(null);
   const { isDarkMode } = useDarkMode();
+  const { errorToast } = useToast();
+
+  const emojisToShow = useMemo(() => {
+    if (replacements.length > 0) {
+      let temp = [...emojiArray];
+
+      replacements.forEach((obj: any) => {
+        for (const emoji in obj) {
+          const index = temp.indexOf(emoji);
+          if (index !== -1) {
+            temp[index] = obj[emoji];
+          }
+        }
+      });
+      return temp;
+    }
+
+    return emojiArray;
+  }, [emojiArray, replacements]);
 
   const handleEmojiReplace = (emojiToReplaceWith: string) => {
-    let newData = [...updatedEmojiArray];
+    try {
+      if (emojisToShow.includes(emojiToReplaceWith)) {
+        throw new Error("This emoji already exists.");
+      }
 
-    const index = newData.indexOf(emojiToReplace);
-    newData[index] = emojiToReplaceWith;
-
-    setUpdatedEmojiArray(newData);
-    setEmojiPickerOpen(false);
+      setReplacements((prev) => [...prev, { [emojiToReplace]: emojiToReplaceWith }]);
+    } catch (error) {
+      const message = (error as Error).message;
+      errorToast({ title: message });
+    } finally {
+      setEmojiPickerOpen(false);
+    }
   };
 
   const handleSubmit = () => {
-    console.log("submit: ", updatedEmojiArray);
+    console.log(
+      "submit: ",
+      Object.values(swapy.current.slotItemMap().asArray).map((entry: any) => entry.item)
+    );
   };
 
   useEffect(() => {
-    if (emojiArray.length > 0) {
-      setUpdatedEmojiArray(emojiArray);
-    }
-  }, [emojiArray]);
-
-  useEffect(() => {
-    if (container.current && emojiArray.length > 0) {
+    if (container.current && emojisToShow.length > 0) {
       swapy.current = createSwapy(container.current);
-
-      swapy.current.onSwapEnd((event: any) => {
-        if (event.hasChanged) {
-          const newOrder = Object.values(event.slotItemMap.asArray).map((entry: any) => entry.item);
-          console.log(newOrder);
-          setUpdatedEmojiArray(newOrder);
-        }
-      });
     }
 
     return () => {
       swapy.current?.destroy();
     };
-  }, [container.current, emojiArray]);
+  }, [container.current, emojisToShow, swapy.current]);
 
   return (
     <Modal isOpen={true} onClose={onClose}>
@@ -80,13 +92,22 @@ const SuccessModal = ({ isOpen, onClose, movieName, emojiArray }: Props) => {
         <ModalHeader>You've correctly guessed the movie!</ModalHeader>
         <ModalBody>
           <Flex id="EmojiPickerContainer" justifyContent={"center"}>
+            {emojiPickerOpen && (
+              <Button
+                position={"absolute"}
+                zIndex={3}
+                onClick={() => {
+                  setEmojiPickerOpen(false);
+                }}
+              >
+                Close
+              </Button>
+            )}
             <EmojiPicker
               open={emojiPickerOpen}
-              style={{ position: "absolute", zIndex: 2 }}
+              style={{ position: "absolute", zIndex: 20 }}
               onEmojiClick={(emojiData) => {
-                // setEmojiPickerOpen(false);
                 handleEmojiReplace(emojiData.emoji);
-                console.log("emoji clicked", emojiData.emoji);
               }}
               height={500}
               width={400}
@@ -105,25 +126,11 @@ const SuccessModal = ({ isOpen, onClose, movieName, emojiArray }: Props) => {
           <Text mb={4} fontSize={fontSizes.md}>
             These are the movie emojis:
           </Text>
-          {/* <EmojiSwapy
-            emojiArray={updatedEmojiArray}
-            setEmojiArray={setUpdatedEmojiArray}
-            setEmojiToReplace={setEmojiToReplace}
-            setEmojiPickerOpen={setEmojiPickerOpen}
-          /> */}
+
           <Flex gap={1} justifyContent={"center"} ref={container} mb={4}>
-            {emojiArray?.map((emoji, index) => (
+            {emojisToShow?.map((emoji, index) => (
               <Flex data-swapy-slot={emoji} key={index}>
-                <Flex
-                  data-swapy-item={emoji}
-                  onClick={() => {
-                    console.log("clicked: ", index);
-                  }}
-                  position={"relative"}
-                  flexDirection={"column"}
-                  alignItems={"center"}
-                  gap={1}
-                >
+                <Flex data-swapy-item={emoji} position={"relative"} flexDirection={"column"} alignItems={"center"} gap={1}>
                   <Icon
                     fontSize="xl"
                     color={isDarkMode ? themeColors.textLight : themeColors.textDark}
@@ -147,7 +154,6 @@ const SuccessModal = ({ isOpen, onClose, movieName, emojiArray }: Props) => {
               This will help to improve the game for everyone!
             </Text>
           </Text>
-          {/* <Text fontSize={fontSizes.sm}>This will help to improve the game for everyone!</Text> */}
         </ModalBody>
 
         <ModalFooter>
