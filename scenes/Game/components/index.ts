@@ -1,3 +1,4 @@
 import EmojiCard from "./EmojiCard";
+import SuccessModal from "./SuccessModal";
 
-export { EmojiCard };
+export { EmojiCard, SuccessModal };

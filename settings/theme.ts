@@ -32,6 +32,7 @@ export const brandColors = {
     pink: "#F8BFC6",
     purple: "#D397F8",
     white: "#FFFFFF",
+    green: "#00FF00",
   },
 };
 
