@@ -8,32 +8,38 @@ const EmojiPicker = dynamic(
 import { Theme } from "emoji-picker-react";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Icon, Flex, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, Text } from "@chakra-ui/react";
+import { Icon, Flex, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, Text, useOutsideClick } from "@chakra-ui/react";
 import { createSwapy } from "swapy";
 import { MdEdit } from "react-icons/md";
+import { IoClose } from "react-icons/io5";
+
 import dynamic from "next/dynamic";
 
 import { useDarkMode, useToast } from "@/hooks";
 import { brandColors, themeColors } from "@/settings/theme";
 import EmojiCard from "./EmojiCard";
 import { fontSizes } from "@/settings/constants/paddings";
+import { supabase } from "@/services/supabase";
+import { MOVIES_COLUMNS, SUPABASE_TABLES } from "@/settings/constants/supabase";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
+  movieId: string;
   movieName: string;
   emojiArray: string[];
 };
 
-const SuccessModal = ({ isOpen, onClose, movieName, emojiArray }: Props) => {
+const SuccessModal = ({ isOpen, onClose, movieId, movieName, emojiArray }: Props) => {
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [emojiToReplace, setEmojiToReplace] = useState<string>("");
   const [replacements, setReplacements] = useState<{ [emoji: string]: string }[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const container = useRef<HTMLDivElement>(null);
   const swapy = useRef<any>(null);
   const { isDarkMode } = useDarkMode();
-  const { errorToast } = useToast();
+  const { errorToast, warningToast, successToast } = useToast();
 
   const emojisToShow = useMemo(() => {
     if (replacements.length > 0) {
@@ -68,11 +74,68 @@ const SuccessModal = ({ isOpen, onClose, movieName, emojiArray }: Props) => {
     }
   };
 
-  const handleSubmit = () => {
-    console.log(
-      "submit: ",
-      Object.values(swapy.current.slotItemMap().asArray).map((entry: any) => entry.item)
-    );
+  const handleSubmit = async () => {
+    try {
+      setIsSubmitting(true);
+
+      const toSubmit = Object.values(swapy.current.slotItemMap().asArray).map((entry: any) => entry.item);
+      const stringToSubmit = JSON.stringify(toSubmit);
+      const stringEmojiArray = JSON.stringify(emojiArray);
+
+      if (stringEmojiArray === stringToSubmit) {
+        warningToast({ title: "These emojis are the same.", description: "" });
+        return;
+      }
+      const { data: movieSuggestionsData, error: movieSuggestionsError } = await supabase
+        .from(SUPABASE_TABLES.movies)
+        .select("emojiSuggestions")
+        .eq("id", movieId)
+        .single();
+      if (movieSuggestionsError) throw movieSuggestionsError;
+
+      if (movieSuggestionsData.emojiSuggestions === null) {
+        const updates = {
+          [stringEmojiArray]: 1,
+          [stringToSubmit]: 1,
+        };
+
+        const { error: movieSuggestionsUpdateError } = await supabase
+          .from(SUPABASE_TABLES.movies)
+          .update({ emojiSuggestions: updates })
+          .eq(MOVIES_COLUMNS.id, movieId);
+        if (movieSuggestionsUpdateError) throw movieSuggestionsUpdateError;
+      } else {
+        let newEmojiSuggestions = { ...movieSuggestionsData.emojiSuggestions };
+
+        let updates: { emojiSuggestions?: { [emojiString: string]: number }; emojiArray?: string[] } = {};
+
+        if (Object.keys(newEmojiSuggestions).includes(stringToSubmit)) {
+          console.log("includes");
+
+          const updateToSubmitAmount = newEmojiSuggestions[stringToSubmit] + 1;
+          newEmojiSuggestions[stringToSubmit] = updateToSubmitAmount;
+
+          updates.emojiSuggestions = newEmojiSuggestions;
+
+          if (updateToSubmitAmount > newEmojiSuggestions[stringEmojiArray]) {
+            updates.emojiArray = toSubmit;
+          }
+        } else {
+          updates.emojiSuggestions = { ...newEmojiSuggestions, [stringToSubmit]: 1 };
+        }
+
+        const { error: updateMovieDetailsError } = await supabase.from(SUPABASE_TABLES.movies).update(updates).eq("id", movieId);
+        if (updateMovieDetailsError) throw updateMovieDetailsError;
+      }
+
+      successToast({ title: "Thank you for your contribution!", description: "" });
+      onClose();
+    } catch (error) {
+      const message = (error as Error).message;
+      errorToast({ title: message });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   useEffect(() => {
@@ -83,36 +146,44 @@ const SuccessModal = ({ isOpen, onClose, movieName, emojiArray }: Props) => {
     return () => {
       swapy.current?.destroy();
     };
-  }, [container.current, emojisToShow, swapy.current]);
+  }, [container.current, emojisToShow]);
 
   return (
-    <Modal isOpen={true} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
-      <ModalContent bg={isDarkMode ? themeColors.bgDark : themeColors.bgLight}>
+      <ModalContent mx={2} bg={isDarkMode ? themeColors.bgDark : themeColors.bgLight}>
         <ModalHeader>You've correctly guessed the movie!</ModalHeader>
         <ModalBody>
-          <Flex id="EmojiPickerContainer" justifyContent={"center"}>
+          <Flex justifyContent={"center"}>
             {emojiPickerOpen && (
-              <Button
-                position={"absolute"}
-                zIndex={3}
-                onClick={() => {
-                  setEmojiPickerOpen(false);
-                }}
-              >
-                Close
-              </Button>
+              <Flex position={"fixed"} top={0} left={0} right={0} bottom={0} justifyContent={"center"} alignItems={"center"} zIndex={10} bg={"rgba(0,0,0,0.7)"}>
+                {emojiPickerOpen && (
+                  <Icon
+                    _hover={{ cursor: "pointer" }}
+                    onClick={() => setEmojiPickerOpen(false)}
+                    fontSize="2xl"
+                    color={isDarkMode ? themeColors.textLight : themeColors.textDark}
+                    zIndex={30}
+                    right={[5, 10]}
+                    top={[5, 10]}
+                    position={"absolute"}
+                  >
+                    <IoClose />
+                  </Icon>
+                )}
+                <EmojiPicker
+                  skinTonesDisabled
+                  open={emojiPickerOpen}
+                  style={{ position: "absolute", zIndex: 20 }}
+                  onEmojiClick={(emojiData) => {
+                    handleEmojiReplace(emojiData.emoji);
+                  }}
+                  height={500}
+                  width={400}
+                  theme={isDarkMode ? Theme.DARK : Theme.LIGHT}
+                />
+              </Flex>
             )}
-            <EmojiPicker
-              open={emojiPickerOpen}
-              style={{ position: "absolute", zIndex: 20 }}
-              onEmojiClick={(emojiData) => {
-                handleEmojiReplace(emojiData.emoji);
-              }}
-              height={500}
-              width={400}
-              theme={isDarkMode ? Theme.DARK : Theme.LIGHT}
-            />
           </Flex>
           <Text
             textAlign={"center"}
@@ -157,10 +228,10 @@ const SuccessModal = ({ isOpen, onClose, movieName, emojiArray }: Props) => {
         </ModalBody>
 
         <ModalFooter>
-          <Button mr={3} onClick={handleSubmit}>
+          <Button mr={3} onClick={handleSubmit} isLoading={isSubmitting}>
             Submit
           </Button>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={onClose} isDisabled={isSubmitting}>
             Close
           </Button>
         </ModalFooter>

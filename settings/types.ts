@@ -7,3 +7,8 @@ export type Movie = {
   defaultEmojis: string;
   emojiArray: string[];
 };
+
+export type Settings = {
+  website: string;
+  hashtags: string[];
+};
