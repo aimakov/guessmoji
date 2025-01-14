@@ -28,9 +28,10 @@ type Props = {
   movieId: string;
   movieName: string;
   emojiArray: string[];
+  hasWon: boolean;
 };
 
-const SuccessModal = ({ isOpen, onClose, movieId, movieName, emojiArray }: Props) => {
+const SuccessModal = ({ isOpen, onClose, movieId, movieName, emojiArray, hasWon }: Props) => {
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [emojiToReplace, setEmojiToReplace] = useState<string>("");
   const [replacements, setReplacements] = useState<{ [emoji: string]: string }[]>([]);
@@ -152,7 +153,7 @@ const SuccessModal = ({ isOpen, onClose, movieId, movieName, emojiArray }: Props
     <Modal isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
       <ModalContent mx={2} bg={isDarkMode ? themeColors.bgDark : themeColors.bgLight}>
-        <ModalHeader>You've correctly guessed the movie!</ModalHeader>
+        <ModalHeader>{hasWon ? "You've correctly guessed the movie!" : "The movie name was:"}</ModalHeader>
         <ModalBody>
           <Flex justifyContent={"center"}>
             {emojiPickerOpen && (

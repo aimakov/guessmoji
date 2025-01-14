@@ -89,8 +89,9 @@ const Game = () => {
       errorToast({ title: "Wrong answer", description: "" });
       setMovieName("");
       if (gameStage === 6) {
-        errorToast({ title: "You lost!", description: "" });
+        errorToast({ title: "You've lost!", description: "" });
         setGameFinished(true);
+        setSuccessModalOpen(true);
         setHasWon(false);
       } else {
         setGameStage((prev) => prev + 1);
@@ -112,6 +113,7 @@ const Game = () => {
         movieId={movieToGuess?.id ?? ""}
         movieName={movieToGuess?.movieName ?? ""}
         emojiArray={movieToGuess?.emojiArray ?? []}
+        hasWon={hasWon}
       />
       <Flex width={"320px"} flexDirection={"column"} mx={"auto"} height={"100%"} flex={1} justifyContent={"center"} alignItems={"center"}>
         <Text mb={4} fontSize={fontSizes["4xl"]} fontWeight={"bold"}>
@@ -166,7 +168,7 @@ const Game = () => {
                 </Button>
               </TwitterShareButton>
             )}
-            <Button onClick={handleResetGame} variant={"outline"} width={"50%"}>
+            <Button onClick={handleResetGame} variant={"outline"} width={"50%"} mx={"auto"}>
               Reset
             </Button>
           </Flex>
