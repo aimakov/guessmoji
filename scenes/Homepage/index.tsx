@@ -10,8 +10,8 @@ const Homepage = () => {
   return (
     <Flex width={"100%"} height={"100%"} flex={1} justifyContent={"center"} alignItems={"center"}>
       <Flex flexDirection={"column"} gap={10}>
-        <Text fontSize={fontSizes["3xl"]} fontWeight={"bold"}>
-          Welcome to GuessMoji
+        <Text fontSize={fontSizes["3xl"]} fontWeight={"bold"} textAlign={"center"}>
+          Welcome to {process.env.NEXT_PUBLIC_WEBSITE_NAME}!
         </Text>
         <Button onClick={() => push(APP_URLS.GAME)} _hover={{ scale: 1.4 }} variant={"primary"} height={"50px"} width={"auto"}>
           <Text fontSize={fontSizes.lg} fontWeight={"semibold"}>
