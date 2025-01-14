@@ -1,6 +1,6 @@
 import type { AppProps } from "next/app";
 import localFont from "next/font/local";
-import { ChakraProvider, extendTheme, CSSReset, localStorageManager, Box } from "@chakra-ui/react";
+import { ChakraProvider, extendTheme, localStorageManager, Box } from "@chakra-ui/react";
 import { NextUIProvider } from "@nextui-org/react";
 
 import { customTheme } from "@/settings/theme";

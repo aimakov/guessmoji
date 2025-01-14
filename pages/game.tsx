@@ -3,9 +3,7 @@ import React from "react";
 import { Layout } from "@/components";
 import { GameScene } from "@/scenes";
 
-type Props = {};
-
-const Game = (props: Props) => {
+const Game = () => {
   return (
     <Layout>
       <GameScene />
