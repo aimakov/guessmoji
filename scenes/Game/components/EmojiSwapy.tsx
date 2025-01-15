@@ -26,7 +26,6 @@ const EmojiSwapy = ({ emojiArray, setEmojiArray, setEmojiToReplace, setEmojiPick
 
       swapy.current.onSwapEnd((event: any) => {
         const newOrder = Object.values(event.slotItemMap.asArray).map((entry: any) => entry.item);
-        console.log("EmojySwapy: ", newOrder);
         setEmojiArray(newOrder);
       });
     }
@@ -36,16 +35,7 @@ const EmojiSwapy = ({ emojiArray, setEmojiArray, setEmojiToReplace, setEmojiPick
     <Flex gap={1} justifyContent={"center"} ref={container} mb={4}>
       {emojiArray?.map((emoji, index) => (
         <Flex data-swapy-slot={emoji} key={index}>
-          <Flex
-            data-swapy-item={emoji}
-            onClick={() => {
-              console.log("clicked: ", index);
-            }}
-            position={"relative"}
-            flexDirection={"column"}
-            alignItems={"center"}
-            gap={1}
-          >
+          <Flex data-swapy-item={emoji} position={"relative"} flexDirection={"column"} alignItems={"center"} gap={1}>
             <Icon
               fontSize="xl"
               color={isDarkMode ? themeColors.textLight : themeColors.textDark}

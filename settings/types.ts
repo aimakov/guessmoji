@@ -11,4 +11,6 @@ export type Movie = {
 export type Settings = {
   website: string;
   hashtags: string[];
+  firstHint: number;
+  secondHint: number;
 };

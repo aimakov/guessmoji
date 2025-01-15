@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import type { AppProps } from "next/app";
 import localFont from "next/font/local";
 import { ChakraProvider, extendTheme, localStorageManager, Box } from "@chakra-ui/react";
@@ -14,6 +15,13 @@ const satoshi = localFont({
 });
 
 export default function App({ Component, pageProps }: AppProps) {
+  useEffect(() => {
+    const nextDiv = document.getElementById("__next");
+    if (nextDiv) {
+      nextDiv.removeAttribute("aria-hidden");
+    }
+  }, []);
+
   return (
     <NextUIProvider>
       <ChakraProvider theme={theme} colorModeManager={localStorageManager}>

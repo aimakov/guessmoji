@@ -14,7 +14,7 @@ const Layout = ({ children }: Props) => {
   const { isDarkMode, toggleColorMode } = useDarkMode();
 
   return (
-    <Flex padding={[paddings.lg, paddings["4xl"]]} flexDirection="column" minHeight="100vh" bgColor={isDarkMode ? themeColors.bgDark : themeColors.bgLight}>
+    <Flex padding={[paddings.lg, paddings["4xl"]]} flexDirection="column" height="100vh" bgColor={isDarkMode ? themeColors.bgDark : themeColors.bgLight}>
       <DarkModeSwitch
         checked={!isDarkMode}
         onChange={toggleColorMode}

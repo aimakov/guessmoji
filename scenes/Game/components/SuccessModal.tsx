@@ -6,8 +6,7 @@ const EmojiPicker = dynamic(
 );
 
 import { Theme } from "emoji-picker-react";
-
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useCallback } from "react";
 import { Icon, Flex, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, Text, useOutsideClick } from "@chakra-ui/react";
 import { createSwapy } from "swapy";
 import { MdEdit } from "react-icons/md";
@@ -37,8 +36,8 @@ const SuccessModal = ({ isOpen, onClose, movieId, movieName, emojiArray, hasWon 
   const [replacements, setReplacements] = useState<{ [emoji: string]: string }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const container = useRef<HTMLDivElement>(null);
   const swapy = useRef<any>(null);
+
   const { isDarkMode } = useDarkMode();
   const { errorToast, warningToast, successToast } = useToast();
 
@@ -111,8 +110,6 @@ const SuccessModal = ({ isOpen, onClose, movieId, movieName, emojiArray, hasWon 
         let updates: { emojiSuggestions?: { [emojiString: string]: number }; emojiArray?: string[] } = {};
 
         if (Object.keys(newEmojiSuggestions).includes(stringToSubmit)) {
-          console.log("includes");
-
           const updateToSubmitAmount = newEmojiSuggestions[stringToSubmit] + 1;
           newEmojiSuggestions[stringToSubmit] = updateToSubmitAmount;
 
@@ -139,15 +136,15 @@ const SuccessModal = ({ isOpen, onClose, movieId, movieName, emojiArray, hasWon 
     }
   };
 
-  useEffect(() => {
-    if (container.current && emojisToShow.length > 0) {
-      swapy.current = createSwapy(container.current);
+  const containerRef = useCallback((node: HTMLDivElement) => {
+    if (node !== null && emojisToShow.length > 0) {
+      swapy.current = createSwapy(node as HTMLElement);
     }
 
     return () => {
       swapy.current?.destroy();
     };
-  }, [container.current, emojisToShow]);
+  }, []);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -199,7 +196,7 @@ const SuccessModal = ({ isOpen, onClose, movieId, movieName, emojiArray, hasWon 
             These are the movie emojis:
           </Text>
 
-          <Flex gap={1} justifyContent={"center"} ref={container} mb={4}>
+          <Flex gap={1} justifyContent={"center"} ref={containerRef} mb={4} width={"100%"}>
             {emojisToShow?.map((emoji, index) => (
               <Flex data-swapy-slot={emoji} key={index}>
                 <Flex data-swapy-item={emoji} position={"relative"} flexDirection={"column"} alignItems={"center"} gap={1}>
@@ -220,6 +217,7 @@ const SuccessModal = ({ isOpen, onClose, movieId, movieName, emojiArray, hasWon 
               </Flex>
             ))}
           </Flex>
+
           <Text fontSize={fontSizes.sm}>
             Re-arrange or replace them in a way that would better describe the movie.{" "}
             <Text as={"span"} fontWeight={"semibold"}>

@@ -11,3 +11,8 @@ export const MOVIES_COLUMNS = {
   emojiArray: "emojiArray",
   emojiSuggestions: "emojiSuggestions",
 };
+
+export const hintIndices = {
+  firstHint: 3,
+  secondHint: 5,
+};

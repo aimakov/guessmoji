@@ -29,7 +29,11 @@ const EmojiCard = ({ emoji, gameFinished, isOpen }: Props) => {
 
   return (
     <Flex width={50} height={50} justifyContent={"center"} alignItems={"center"} bg={bgColor} borderRadius={10} cursor={"pointer"}>
-      {(isOpen || gameFinished) && <Text fontSize={fontSizes["2xl"]}>{emoji}</Text>}
+      {(isOpen || gameFinished) && (
+        <Text fontSize={fontSizes["2xl"]} userSelect={"none"}>
+          {emoji}
+        </Text>
+      )}
     </Flex>
   );
 };
