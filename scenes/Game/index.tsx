@@ -52,7 +52,7 @@ const Game = () => {
       const { data, error } = await supabase.rpc("get_random_movie");
       if (error) throw error;
 
-      setMovieToGuess(data[0] as Movie);
+      setMovieToGuess({ ...data, emojiArray: JSON.parse(data.emojiArray) } as Movie);
       setIsGameLoading(false);
     } catch (error) {
       const message = (error as Error).message;
@@ -136,7 +136,7 @@ const Game = () => {
           </Flex>
         ) : (
           <Flex gap={1}>
-            {movieToGuess?.emojiArray?.map((emoji, index) => (
+            {(movieToGuess?.emojiArray ?? []).map((emoji: string, index: number) => (
               <Flex key={index}>
                 <Flex>
                   <EmojiCard emoji={emoji} gameFinished={gameFinished} isOpen={index < gameStage} />
